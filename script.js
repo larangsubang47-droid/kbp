@@ -1,3 +1,4 @@
+const API_URL = 'https://script.google.com/macros/s/AKfycbwrO7QDfUUyuG4Ea5eC1wvbulDnEDwhbi1QgMfvbkE3l3OX5KaRmjGqk0ALER3cC4M/exec';
 // Time slots dari 07:00 sampai 06:00 (24 jam)
 const timeSlots = [
     '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', 
@@ -320,4 +321,5 @@ function exportToExcel() {
 }
 
 // Initialize on load
+
 window.addEventListener('load', initializeForm);
