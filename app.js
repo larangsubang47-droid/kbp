@@ -1,5 +1,5 @@
 // ==========================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzCg1G4-jaQeP6yWHUtlpCrT7AicS8CyV3FktK2iJfj0eaTihZv77JdkCvmuGTZ6fn7/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxBjmPWeadl8RcLuwfgYD5Ifu9Pdf1ZKNRgORiAfMP9XGcgL1zc_vGd__442ChkrIaQeg/exec';
 
 // ==========================================
 // DATA STRUKTUR
@@ -49,7 +49,7 @@ const dataStructure = {
 let currentUser = null;
 let deferredPrompt = null;
 let selectedTimes = [];
-let currentDraftKey = null; // Key untuk draft yang sedang aktif
+let autoSaveInterval = null;
 
 // ==========================================
 // INITIALIZATION
@@ -72,162 +72,150 @@ window.onload = function() {
   // Initialize selected times
   updateSelectedTimes();
   
-  // Load draft jika ada
+  // Load draft if exists
   loadDraft();
   
-  // Update draft key ketika tanggal berubah
-  document.getElementById('tanggal').addEventListener('change', function() {
-    const newDate = this.value;
-    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const dateObj = new Date(newDate + 'T00:00:00');
-    document.getElementById('hari').value = days[dateObj.getDay()];
-    
-    // Update draft key
-    updateDraftKey();
-    
-    // Load draft untuk tanggal baru
-    loadDraft();
-  });
-  
-  // ========== TAMBAHAN: EVENT LISTENER UNTUK LOGIN ==========
-  // Tambah event listener untuk Enter key di login form
-  const loginUsername = document.getElementById('loginUsername');
-  const loginPassword = document.getElementById('loginPassword');
-  
-  if(loginUsername) {
-    loginUsername.addEventListener('keypress', function(e) {
-      if(e.key === 'Enter') {
-        e.preventDefault();
-        login();
-      }
-    });
-  }
-  
-  if(loginPassword) {
-    loginPassword.addEventListener('keypress', function(e) {
-      if(e.key === 'Enter') {
-        e.preventDefault();
-        login();
-      }
-    });
-  }
+  // Start auto-save (every 30 seconds)
+  startAutoSave();
 };
 
 // ==========================================
-// DRAFT MANAGEMENT
+// AUTO-SAVE & DRAFT MANAGEMENT
 // ==========================================
-function updateDraftKey() {
-  const tanggal = document.getElementById('tanggal').value;
-  currentDraftKey = `draft_${tanggal}`;
-  updateDraftIndicator();
+function startAutoSave() {
+  // Clear previous interval if exists
+  if(autoSaveInterval) {
+    clearInterval(autoSaveInterval);
+  }
+  
+  // Auto-save every 30 seconds
+  autoSaveInterval = setInterval(() => {
+    saveDraft(true); // true = silent mode (no notification)
+  }, 30000);
 }
 
-function updateDraftIndicator() {
-  const indicator = document.getElementById('draftIndicator');
-  if(!currentDraftKey) {
-    indicator.style.display = 'none';
-    return;
-  }
-  
-  const draft = localStorage.getItem(currentDraftKey);
-  if(draft) {
-    const draftData = JSON.parse(draft);
-    indicator.style.display = 'block';
-    indicator.innerHTML = `💾 Draft tersimpan: ${draftData.lastSaved || 'Tidak ada info waktu'}`;
-  } else {
-    indicator.style.display = 'none';
-  }
-}
-
-function saveDraft() {
-  const tanggal = document.getElementById('tanggal').value;
-  
-  if(!tanggal) {
-    showNotification('⚠️ Pilih tanggal terlebih dahulu!', 'warning');
-    return;
-  }
-  
-  // Update current draft key
-  currentDraftKey = `draft_${tanggal}`;
-  
-  const draftData = collectFormData();
-  draftData.lastSaved = new Date().toLocaleString('id-ID');
-  
+function saveDraft(silent = false) {
   try {
-    localStorage.setItem(currentDraftKey, JSON.stringify(draftData));
-    showNotification('✓ Draft berhasil disimpan!', 'success');
-    updateDraftIndicator();
-  } catch(e) {
-    showNotification('❌ Gagal menyimpan draft: ' + e.message, 'error');
+    const tanggal = document.getElementById('tanggal').value;
+    if(!tanggal) return;
+    
+    const draftData = collectFormData();
+    const draftKey = `draft_${tanggal}`;
+    
+    localStorage.setItem(draftKey, JSON.stringify(draftData));
+    localStorage.setItem('lastDraftDate', tanggal);
+    
+    if(!silent) {
+      showNotification('💾 Draft tersimpan!', 'success');
+    }
+    
+    // Update draft indicator
+    updateDraftIndicator(true);
+  } catch(error) {
+    console.error('Error saving draft:', error);
   }
 }
 
 function loadDraft() {
-  const tanggal = document.getElementById('tanggal').value;
-  if(!tanggal) return;
-  
-  currentDraftKey = `draft_${tanggal}`;
-  const draftStr = localStorage.getItem(currentDraftKey);
-  
-  if(!draftStr) {
-    updateDraftIndicator();
-    return;
+  try {
+    const tanggal = document.getElementById('tanggal').value;
+    const draftKey = `draft_${tanggal}`;
+    const draftData = localStorage.getItem(draftKey);
+    
+    if(draftData) {
+      const data = JSON.parse(draftData);
+      fillFormWithData(data);
+      updateDraftIndicator(true);
+      showNotification('📄 Draft ditemukan dan dimuat', 'info');
+    } else {
+      updateDraftIndicator(false);
+    }
+  } catch(error) {
+    console.error('Error loading draft:', error);
   }
-  
-  if(!confirm(`Draft ditemukan untuk tanggal ${tanggal}.\nLoad draft?`)) {
-    return;
-  }
-  
-  const draft = JSON.parse(draftStr);
-  
-  // Load basic info
-  document.getElementById('hari').value = draft.hari || '';
-  document.getElementById('operatorShift1').value = draft.operator?.shift1 || '';
-  document.getElementById('operatorShift2').value = draft.operator?.shift2 || '';
-  
-  // Load KWH Meter
-  if(draft.kwhMeter) {
-    document.getElementById('kwhWbp1').value = draft.kwhMeter.wbp1 || '';
-    document.getElementById('kwhLwbp1').value = draft.kwhMeter.lwbp1 || '';
-    document.getElementById('kwhLwbp2').value = draft.kwhMeter.lwbp2 || '';
-    document.getElementById('kwhTotal').value = draft.kwhMeter.total || '';
-  }
-  
-  // Load Total WM
-  if(draft.totalWM) {
-    document.getElementById('wmAirBaku').value = draft.totalWM.airBaku || '';
-    document.getElementById('wmAirBersih').value = draft.totalWM.airBersih || '';
-  }
-  
-  // Load Catatan
-  document.getElementById('catatan').value = draft.catatan || '';
-  
-  // Load selected times
-  if(draft.selectedTimes) {
-    selectedTimes = draft.selectedTimes;
-    document.querySelectorAll('.time-check').forEach(cb => {
-      cb.checked = selectedTimes.includes(cb.value);
-    });
-    initializeTables();
-  }
-  
-  // Load table data
-  setTimeout(() => {
-    loadTableData('levelAirTable', dataStructure.levelAir, draft.levelAir);
-    loadTableData('flowDebitTable', dataStructure.flowDebit, draft.flowDebit);
-    loadTableData('pressureDistribusiTable', dataStructure.pressureDistribusi, draft.pressureDistribusi);
-    loadTableData('hzDistribusiTable', dataStructure.hzDistribusi, draft.hzDistribusi);
-    loadTableData('pressureIntakeTable', dataStructure.pressureIntake, draft.pressureIntake);
-    loadTableData('hzIntakeTable', dataStructure.hzIntake, draft.hzIntake);
-    loadTableData('wdcTable', dataStructure.wdc, draft.wdc);
-    loadTableData('backwashFilterTable', dataStructure.backwashFilter, draft.backwashFilter);
-  }, 100);
-  
-  showNotification('✓ Draft berhasil dimuat!', 'success');
-  updateDraftIndicator();
 }
 
-function loadTableData(tableId, items, data) {
+function deleteDraft() {
+  if(confirm('Hapus draft untuk tanggal ini?')) {
+    const tanggal = document.getElementById('tanggal').value;
+    const draftKey = `draft_${tanggal}`;
+    localStorage.removeItem(draftKey);
+    updateDraftIndicator(false);
+    showNotification('Draft dihapus', 'success');
+  }
+}
+
+function updateDraftIndicator(hasDraft) {
+  const indicator = document.getElementById('draftIndicator');
+  if(indicator) {
+    if(hasDraft) {
+      indicator.style.display = 'inline-block';
+      indicator.textContent = '📝 Draft tersedia';
+    } else {
+      indicator.style.display = 'none';
+    }
+  }
+}
+
+function collectFormData() {
+  return {
+    hari: document.getElementById('hari').value,
+    tanggal: document.getElementById('tanggal').value,
+    operator: {
+      shift1: document.getElementById('operatorShift1').value,
+      shift2: document.getElementById('operatorShift2').value
+    },
+    levelAir: collectTableData('levelAirTable', dataStructure.levelAir),
+    flowDebit: collectTableData('flowDebitTable', dataStructure.flowDebit),
+    pressureDistribusi: collectTableData('pressureDistribusiTable', dataStructure.pressureDistribusi),
+    hzDistribusi: collectTableData('hzDistribusiTable', dataStructure.hzDistribusi),
+    pressureIntake: collectTableData('pressureIntakeTable', dataStructure.pressureIntake),
+    hzIntake: collectTableData('hzIntakeTable', dataStructure.hzIntake),
+    wdc: collectTableData('wdcTable', dataStructure.wdc),
+    backwashFilter: collectTableData('backwashFilterTable', dataStructure.backwashFilter),
+    kwhMeter: {
+      wbp1: document.getElementById('kwhWBP1').value,
+      lwbp1: document.getElementById('kwhLWBP1').value,
+      lwbp2: document.getElementById('kwhLWBP2').value,
+      total: document.getElementById('kwhTotal').value
+    },
+    totalWM: {
+      airBaku: document.getElementById('totalWMAirBaku').value,
+      airBersih: document.getElementById('totalWMAirBersih').value
+    },
+    catatan: document.getElementById('catatan').value,
+    selectedTimes: selectedTimes
+  };
+}
+
+function fillFormWithData(data) {
+  document.getElementById('hari').value = data.hari || '';
+  document.getElementById('tanggal').value = data.tanggal || '';
+  document.getElementById('operatorShift1').value = data.operator?.shift1 || '';
+  document.getElementById('operatorShift2').value = data.operator?.shift2 || '';
+  
+  document.getElementById('kwhWBP1').value = data.kwhMeter?.wbp1 || '';
+  document.getElementById('kwhLWBP1').value = data.kwhMeter?.lwbp1 || '';
+  document.getElementById('kwhLWBP2').value = data.kwhMeter?.lwbp2 || '';
+  document.getElementById('kwhTotal').value = data.kwhMeter?.total || '';
+  
+  document.getElementById('totalWMAirBaku').value = data.totalWM?.airBaku || '';
+  document.getElementById('totalWMAirBersih').value = data.totalWM?.airBersih || '';
+  
+  document.getElementById('catatan').value = data.catatan || '';
+  
+  // Fill table data
+  fillTableData('levelAirTable', dataStructure.levelAir, data.levelAir);
+  fillTableData('flowDebitTable', dataStructure.flowDebit, data.flowDebit);
+  fillTableData('pressureDistribusiTable', dataStructure.pressureDistribusi, data.pressureDistribusi);
+  fillTableData('hzDistribusiTable', dataStructure.hzDistribusi, data.hzDistribusi);
+  fillTableData('pressureIntakeTable', dataStructure.pressureIntake, data.pressureIntake);
+  fillTableData('hzIntakeTable', dataStructure.hzIntake, data.hzIntake);
+  fillTableData('wdcTable', dataStructure.wdc, data.wdc);
+  fillTableData('backwashFilterTable', dataStructure.backwashFilter, data.backwashFilter);
+}
+
+function fillTableData(tableId, items, data) {
   if(!data) return;
   
   items.forEach((item, index) => {
@@ -235,7 +223,7 @@ function loadTableData(tableId, items, data) {
       selectedTimes.forEach(time => {
         const inputId = `${tableId}_${index}_${time.replace(':', '')}`;
         const input = document.getElementById(inputId);
-        if(input && data[item.name][time] !== undefined) {
+        if(input && data[item.name][time]) {
           input.value = data[item.name][time];
         }
       });
@@ -243,30 +231,24 @@ function loadTableData(tableId, items, data) {
   });
 }
 
-function deleteDraft() {
-  if(!currentDraftKey) return;
-  
-  if(!confirm('Hapus draft untuk tanggal ini?')) return;
-  
-  localStorage.removeItem(currentDraftKey);
-  showNotification('✓ Draft berhasil dihapus!', 'success');
-  updateDraftIndicator();
-}
-
-function listAllDrafts() {
-  const drafts = [];
-  for(let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if(key.startsWith('draft_')) {
-      const draft = JSON.parse(localStorage.getItem(key));
-      drafts.push({
-        key: key,
-        tanggal: draft.tanggal,
-        lastSaved: draft.lastSaved
-      });
-    }
+// ==========================================
+// DATE CHANGE HANDLER
+// ==========================================
+function onDateChange() {
+  // Save current draft before switching
+  const oldDate = localStorage.getItem('lastDraftDate');
+  if(oldDate) {
+    saveDraft(true);
   }
-  return drafts;
+  
+  // Update hari
+  const tanggalInput = document.getElementById('tanggal');
+  const date = new Date(tanggalInput.value + 'T00:00:00');
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  document.getElementById('hari').value = days[date.getDay()];
+  
+  // Load draft for new date
+  loadDraft();
 }
 
 // ==========================================
@@ -282,78 +264,49 @@ function installPWA() {
   if(deferredPrompt) {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then((choiceResult) => {
-      if(choiceResult.outcome === 'accepted') {
-        console.log('PWA installed');
+      if (choiceResult.outcome === 'accepted') {
+        showNotification('Aplikasi berhasil diinstall!', 'success');
       }
       deferredPrompt = null;
+      document.getElementById('installBtn').style.display = 'none';
     });
   }
 }
 
 // ==========================================
-// LOGIN & AUTH - DIPERBAIKI
+// AUTHENTICATION
 // ==========================================
 async function login() {
-  const username = document.getElementById('loginUsername').value.trim();
-  const password = document.getElementById('loginPassword').value.trim();
-  
-  console.log('🔐 Attempting login...', { username, passwordLength: password.length });
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
 
   if(!username || !password) {
-    showNotification('⚠️ Username dan password harus diisi!', 'warning');
+    showNotification('Username dan password harus diisi!', 'error');
     return;
-  }
-  
-  // Disable button saat loading
-  const loginBtn = event?.target || document.querySelector('.login-card .btn-primary');
-  const originalText = loginBtn?.textContent;
-  if(loginBtn) {
-    loginBtn.disabled = true;
-    loginBtn.textContent = '⏳ Loading...';
   }
 
   try {
-    console.log('📡 Sending request to:', API_URL);
-    
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-      },
       body: JSON.stringify({
         action: 'login',
         username: username,
         password: password
-      }),
-      mode: 'cors'
+      })
     });
 
-    console.log('📥 Response status:', response.status);
-    
-    if(!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
     const result = await response.json();
-    console.log('📦 Response data:', result);
 
     if(result.success) {
       currentUser = result.data;
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      showNotification('✓ Login berhasil!', 'success');
+      showNotification('Login berhasil!', 'success');
       showMainApp();
     } else {
-      showNotification('❌ ' + (result.message || 'Login gagal'), 'error');
+      showNotification(result.message, 'error');
     }
   } catch(error) {
-    console.error('❌ Login error:', error);
-    showNotification('❌ Gagal connect ke server: ' + error.message + '\n\nCek console (F12) untuk detail error', 'error');
-  } finally {
-    // Re-enable button
-    if(loginBtn) {
-      loginBtn.disabled = false;
-      loginBtn.textContent = originalText;
-    }
+    showNotification('Gagal connect ke server: ' + error.message, 'error');
   }
 }
 
@@ -363,112 +316,91 @@ function logout() {
     currentUser = null;
     document.getElementById('mainApp').classList.add('hidden');
     document.getElementById('loginScreen').classList.remove('hidden');
-    showNotification('✓ Logout berhasil!', 'success');
+    showNotification('Logout berhasil!', 'success');
   }
 }
 
 function showMainApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  document.getElementById('userDisplay').textContent = `👤 ${currentUser.nama} (${currentUser.role})`;
+  document.getElementById('userDisplay').textContent = `👤 ${currentUser.nama}`;
   
-  // Initialize draft key
-  updateDraftKey();
+  // Initialize tables
+  initializeTables();
+  loadHistory();
 }
 
 // ==========================================
-// TIME SELECTION
+// TABLE INITIALIZATION
 // ==========================================
 function updateSelectedTimes() {
-  selectedTimes = [];
-  document.querySelectorAll('.time-check:checked').forEach(cb => {
-    selectedTimes.push(cb.value);
-  });
+  const checkboxes = document.querySelectorAll('.time-check:checked');
+  selectedTimes = Array.from(checkboxes).map(cb => cb.value);
   initializeTables();
 }
 
 function initializeTables() {
-  createTable('levelAirTable', dataStructure.levelAir);
-  createTable('flowDebitTable', dataStructure.flowDebit);
-  createTable('pressureDistribusiTable', dataStructure.pressureDistribusi);
-  createTable('hzDistribusiTable', dataStructure.hzDistribusi);
-  createTable('pressureIntakeTable', dataStructure.pressureIntake);
-  createTable('hzIntakeTable', dataStructure.hzIntake);
-  createTable('wdcTable', dataStructure.wdc);
-  createTable('backwashFilterTable', dataStructure.backwashFilter);
+  // Add event listeners to time checkboxes
+  document.querySelectorAll('.time-check').forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectedTimes);
+  });
+  
+  // Initialize each table
+  createDataTable('levelAirTable', dataStructure.levelAir);
+  createDataTable('flowDebitTable', dataStructure.flowDebit);
+  createDataTable('pressureDistribusiTable', dataStructure.pressureDistribusi);
+  createDataTable('hzDistribusiTable', dataStructure.hzDistribusi);
+  createDataTable('pressureIntakeTable', dataStructure.pressureIntake);
+  createDataTable('hzIntakeTable', dataStructure.hzIntake);
+  createDataTable('wdcTable', dataStructure.wdc);
+  createDataTable('backwashFilterTable', dataStructure.backwashFilter);
 }
 
-function createTable(tableId, items) {
-  const table = document.getElementById(tableId);
-  table.innerHTML = '';
+function createDataTable(tableId, items) {
+  const container = document.getElementById(tableId);
+  if (!container) return;
   
-  // Header row
-  const headerRow = document.createElement('tr');
-  headerRow.innerHTML = '<th>Jenis Kegiatan</th><th>Satuan</th>';
+  let html = '<table class="input-table"><thead><tr>';
+  html += '<th>Jenis Kegiatan</th><th>Satuan</th>';
+  
   selectedTimes.forEach(time => {
-    headerRow.innerHTML += `<th>${time}</th>`;
+    html += `<th>${time}</th>`;
   });
-  table.appendChild(headerRow);
   
-  // Data rows
+  html += '</tr></thead><tbody>';
+  
   items.forEach((item, index) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${item.name}</td><td>${item.satuan}</td>`;
+    html += `<tr>`;
+    html += `<td><strong>${item.name}</strong></td>`;
+    html += `<td>${item.satuan}</td>`;
     
     selectedTimes.forEach(time => {
       const inputId = `${tableId}_${index}_${time.replace(':', '')}`;
-      row.innerHTML += `<td><input type="number" step="0.01" id="${inputId}" class="table-input"></td>`;
+      html += `<td><input type="number" id="${inputId}" step="0.01" placeholder="0"></td>`;
     });
     
-    table.appendChild(row);
+    html += `</tr>`;
   });
-}
-
-// ==========================================
-// DATA COLLECTION
-// ==========================================
-function collectFormData() {
-  const data = {
-    tanggal: document.getElementById('tanggal').value,
-    hari: document.getElementById('hari').value,
-    operator: {
-      shift1: document.getElementById('operatorShift1').value,
-      shift2: document.getElementById('operatorShift2').value
-    },
-    selectedTimes: selectedTimes,
-    levelAir: collectTableData('levelAirTable', dataStructure.levelAir),
-    flowDebit: collectTableData('flowDebitTable', dataStructure.flowDebit),
-    pressureDistribusi: collectTableData('pressureDistribusiTable', dataStructure.pressureDistribusi),
-    hzDistribusi: collectTableData('hzDistribusiTable', dataStructure.hzDistribusi),
-    pressureIntake: collectTableData('pressureIntakeTable', dataStructure.pressureIntake),
-    hzIntake: collectTableData('hzIntakeTable', dataStructure.hzIntake),
-    wdc: collectTableData('wdcTable', dataStructure.wdc),
-    backwashFilter: collectTableData('backwashFilterTable', dataStructure.backwashFilter),
-    kwhMeter: {
-      wbp1: document.getElementById('kwhWbp1').value,
-      lwbp1: document.getElementById('kwhLwbp1').value,
-      lwbp2: document.getElementById('kwhLwbp2').value,
-      total: document.getElementById('kwhTotal').value
-    },
-    totalWM: {
-      airBaku: document.getElementById('wmAirBaku').value,
-      airBersih: document.getElementById('wmAirBersih').value
-    },
-    catatan: document.getElementById('catatan').value
-  };
   
-  return data;
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
+// ==========================================
+// COLLECT DATA FROM TABLES
+// ==========================================
 function collectTableData(tableId, items) {
   const data = {};
   
   items.forEach((item, index) => {
     data[item.name] = {};
+    
     selectedTimes.forEach(time => {
       const inputId = `${tableId}_${index}_${time.replace(':', '')}`;
       const input = document.getElementById(inputId);
-      data[item.name][time] = input ? input.value : '';
+      if (input && input.value) {
+        data[item.name][time] = parseFloat(input.value);
+      }
     });
   });
   
@@ -476,128 +408,175 @@ function collectTableData(tableId, items) {
 }
 
 // ==========================================
-// SUBMIT FINAL DATA
+// SAVE DATA - FINAL SUBMIT
 // ==========================================
-async function submitFinalData() {
-  if(!currentUser) {
-    showNotification('❌ Anda harus login terlebih dahulu!', 'error');
+async function saveDataFinal() {
+  const hari = document.getElementById('hari').value;
+  const tanggal = document.getElementById('tanggal').value;
+
+  if(!hari || !tanggal) {
+    showNotification('Hari dan tanggal harus diisi!', 'error');
     return;
   }
   
-  const data = collectFormData();
-  
-  // Validasi
-  if(!data.tanggal || !data.hari) {
-    showNotification('⚠️ Tanggal dan hari harus diisi!', 'warning');
+  if(!confirm('Kirim laporan final ke Google Drive?\n\nSetelah dikirim, draft akan dihapus.')) {
     return;
   }
-  
-  if(!confirm('⚠️ PERHATIAN!\n\nData yang sudah disubmit tidak bisa diubah lagi.\nYakin ingin submit data final ke Google Drive?')) {
-    return;
-  }
-  
-  const submitBtn = event?.target;
-  const originalText = submitBtn?.textContent;
-  if(submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = '⏳ Mengirim...';
-  }
-  
+
+  const saveBtn = document.getElementById('saveFinalBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '⏳ Mengirim ke Google Drive...';
+
   try {
+    const reportData = collectFormData();
+
     const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-      },
       body: JSON.stringify({
         action: 'saveProductionReport',
         userId: currentUser.userId,
-        reportData: data
-      }),
-      mode: 'cors'
+        reportData: reportData
+      })
     });
-    
+
     const result = await response.json();
-    
+
     if(result.success) {
-      showNotification('✓ Laporan berhasil disimpan!\n\nID: ' + result.data.recordId, 'success');
+      showNotification('✓ Laporan berhasil dikirim ke Google Drive!', 'success');
       
-      // Hapus draft setelah submit
-      if(currentDraftKey) {
-        localStorage.removeItem(currentDraftKey);
-        updateDraftIndicator();
-      }
+      // Delete draft after successful save
+      const draftKey = `draft_${tanggal}`;
+      localStorage.removeItem(draftKey);
+      updateDraftIndicator(false);
       
-      // Reset form
-      if(confirm('Data berhasil disimpan!\n\nReset form untuk input baru?')) {
-        resetForm();
-      }
+      clearForm();
+      loadHistory();
     } else {
-      showNotification('❌ Gagal menyimpan: ' + result.message, 'error');
+      showNotification('Gagal kirim: ' + result.message, 'error');
     }
   } catch(error) {
-    console.error('Submit error:', error);
-    showNotification('❌ Error saat menyimpan: ' + error.message, 'error');
+    showNotification('Error: ' + error.message, 'error');
   } finally {
-    if(submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalText;
+    saveBtn.disabled = false;
+    saveBtn.textContent = '📤 Kirim ke Google Drive';
+  }
+}
+
+function clearForm() {
+  const today = new Date();
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  
+  document.getElementById('hari').value = days[today.getDay()];
+  document.getElementById('tanggal').valueAsDate = today;
+  document.getElementById('operatorShift1').value = '';
+  document.getElementById('operatorShift2').value = '';
+  document.getElementById('kwhWBP1').value = '';
+  document.getElementById('kwhLWBP1').value = '';
+  document.getElementById('kwhLWBP2').value = '';
+  document.getElementById('kwhTotal').value = '';
+  document.getElementById('totalWMAirBaku').value = '';
+  document.getElementById('totalWMAirBersih').value = '';
+  document.getElementById('catatan').value = '';
+  
+  // Clear all table inputs
+  document.querySelectorAll('.input-table input').forEach(input => {
+    input.value = '';
+  });
+  
+  updateDraftIndicator(false);
+}
+
+// ==========================================
+// LOAD HISTORY
+// ==========================================
+async function loadHistory() {
+  const historyList = document.getElementById('historyList');
+  historyList.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat data...</div>';
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'getProductionHistory',
+        userId: currentUser.userId,
+        role: currentUser.role,
+        limit: 50
+      })
+    });
+
+    const result = await response.json();
+
+    if(result.success) {
+      const records = result.data.records;
+      
+      if(records.length === 0) {
+        historyList.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">Belum ada laporan</div>';
+        return;
+      }
+
+      let html = '';
+      records.forEach(record => {
+        const date = new Date(record.createdAt).toLocaleString('id-ID');
+        
+        html += `
+          <div class="history-item" onclick="viewDetail('${record.recordId}')">
+            <div class="history-header">
+              <span class="history-date">${date}</span>
+              <span class="status-badge status-aktif">📄 Laporan</span>
+            </div>
+            <div class="history-name">${record.hari}, ${record.tanggal}</div>
+            <div class="history-id">Operator: ${record.operator.shift1}</div>
+          </div>
+        `;
+      });
+
+      historyList.innerHTML = html;
+    } else {
+      historyList.innerHTML = '<div style="text-align:center; padding:40px; color:#f44336;">Gagal memuat data</div>';
     }
+  } catch(error) {
+    historyList.innerHTML = '<div style="text-align:center; padding:40px; color:#f44336;">Error: ' + error.message + '</div>';
+  }
+}
+
+function viewDetail(recordId) {
+  showNotification('Detail untuk ' + recordId, 'success');
+  // Implement detail view later
+}
+
+// ==========================================
+// NAVIGATION
+// ==========================================
+function switchScreen(screen) {
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => item.classList.remove('active'));
+
+  if(screen === 'form') {
+    document.getElementById('formScreen').classList.remove('hidden');
+    document.getElementById('historyScreen').classList.add('hidden');
+    navItems[0].classList.add('active');
+  } else if(screen === 'history') {
+    document.getElementById('formScreen').classList.add('hidden');
+    document.getElementById('historyScreen').classList.remove('hidden');
+    navItems[1].classList.add('active');
+    loadHistory();
   }
 }
 
 // ==========================================
-// RESET & UTILITY
+// NOTIFICATION
 // ==========================================
-function resetForm() {
-  if(!confirm('Reset form? Semua data yang belum disimpan akan hilang!')) return;
-  
-  // Reset basic info
-  document.getElementById('operatorShift1').value = '';
-  document.getElementById('operatorShift2').value = '';
-  
-  // Reset KWH & WM
-  document.getElementById('kwhWbp1').value = '';
-  document.getElementById('kwhLwbp1').value = '';
-  document.getElementById('kwhLwbp2').value = '';
-  document.getElementById('kwhTotal').value = '';
-  document.getElementById('wmAirBaku').value = '';
-  document.getElementById('wmAirBersih').value = '';
-  document.getElementById('catatan').value = '';
-  
-  // Reset all table inputs
-  document.querySelectorAll('.table-input').forEach(input => {
-    input.value = '';
-  });
-  
-  showNotification('✓ Form berhasil direset!', 'success');
-}
-
-function showNotification(message, type = 'info') {
+function showNotification(message, type = 'success') {
   const notification = document.getElementById('notification');
   notification.textContent = message;
   notification.className = `notification ${type} show`;
   
   setTimeout(() => {
     notification.classList.remove('show');
-  }, 5000);
+  }, 3000);
 }
 
-// ==========================================
-// AUTO-SAVE DRAFT (OPTIONAL)
-// ==========================================
-let autoSaveTimer;
-function startAutoSave() {
-  // Auto save setiap 2 menit
-  clearInterval(autoSaveTimer);
-  autoSaveTimer = setInterval(() => {
-    const tanggal = document.getElementById('tanggal').value;
-    if(tanggal && currentUser) {
-      saveDraft();
-      console.log('✅ Auto-save draft');
-    }
-  }, 120000); // 2 menit
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
 }
-
-// Uncomment line berikut jika ingin aktifkan auto-save
-// startAutoSave();
