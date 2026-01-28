@@ -245,6 +245,17 @@ textarea {
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
+.btn-warning {
+  background: #ff9800;
+  color: white;
+}
+
+.btn-warning:hover {
+  background: #f57c00;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
 .btn-secondary {
   background: #757575;
   color: white;
@@ -261,6 +272,8 @@ textarea {
 
 .btn-danger:hover {
   background: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }
 
 .btn:disabled {
@@ -276,9 +289,24 @@ textarea {
 
 .form-actions {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 24px;
+}
+
+/* Draft Actions - untuk tombol draft */
+.draft-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Main Actions - untuk tombol final submit */
+.main-actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
 }
 
 .camera-container {
@@ -444,6 +472,10 @@ textarea {
   border-left: 4px solid #f44336;
 }
 
+.notification.info {
+  border-left: 4px solid #2196f3;
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(400px);
@@ -558,6 +590,14 @@ textarea {
   }
   
   .form-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .draft-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .main-actions {
     grid-template-columns: 1fr;
   }
   
