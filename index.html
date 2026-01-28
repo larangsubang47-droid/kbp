@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976d2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Laporan Produksi Air Bersih - Jasa Tirta Luhur</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- NOTIFICATION -->
+  <div id="notification" class="notification"></div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="login-container">
+    <div class="login-card">
+      <div class="logo">💧</div>
+      <h1 class="login-title">Jasa Tirta Luhur</h1>
+      <p class="login-subtitle">Laporan Produksi Air Bersih</p>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="loginUsername" placeholder="Masukkan username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Masukkan password" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" onclick="login()">🔐 Login</button>
+      <button id="installBtn" class="btn btn-install" onclick="installPWA()">📱 Install Aplikasi</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="mainApp" class="hidden">
+    <!-- HEADER -->
+    <div class="header">
+      <h1>💧 Laporan Produksi Air Bersih</h1>
+      <div class="user-info">
+        <span id="userDisplay"></span>
+        <button onclick="logout()" class="btn-logout">Logout</button>
+      </div>
+    </div>
+
+    <!-- FORM INPUT -->
+    <div id="formScreen" class="container">
+      <div class="card">
+        <h2 class="section-title">📋 Form Laporan Produksi</h2>
+        
+        <!-- HEADER INFO - OPERATOR DI ATAS -->
+        <div class="form-section">
+          <h3>ℹ️ Informasi Laporan</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Hari *</label>
+              <input type="text" id="hari" placeholder="Contoh: Senin" required>
+            </div>
+            <div class="form-group">
+              <label>Tanggal *</label>
+              <input type="date" id="tanggal" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Operator Shift 1</label>
+              <input type="text" id="operatorShift1" placeholder="Nama operator shift 1">
+            </div>
+            <div class="form-group">
+              <label>Operator Shift 2</label>
+              <input type="text" id="operatorShift2" placeholder="Nama operator shift 2">
+            </div>
+          </div>
+        </div>
+
+        <!-- FREKUENSI PENGAMBILAN -->
+        <div class="form-section">
+          <h3>⏰ Frekuensi Pengambilan Data</h3>
+          <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Pilih jam pengambilan data (centang jam yang diperlukan)</p>
+          <div class="time-slots">
+            <label><input type="checkbox" class="time-check" value="07:00" checked> 07:00</label>
+            <label><input type="checkbox" class="time-check" value="08:00" checked> 08:00</label>
+            <label><input type="checkbox" class="time-check" value="09:00" checked> 09:00</label>
+            <label><input type="checkbox" class="time-check" value="10:00" checked> 10:00</label>
+            <label><input type="checkbox" class="time-check" value="11:00" checked> 11:00</label>
+            <label><input type="checkbox" class="time-check" value="12:00" checked> 12:00</label>
+            <label><input type="checkbox" class="time-check" value="13:00" checked> 13:00</label>
+            <label><input type="checkbox" class="time-check" value="14:00" checked> 14:00</label>
+            <label><input type="checkbox" class="time-check" value="15:00" checked> 15:00</label>
+            <label><input type="checkbox" class="time-check" value="16:00" checked> 16:00</label>
+            <label><input type="checkbox" class="time-check" value="17:00" checked> 17:00</label>
+            <label><input type="checkbox" class="time-check" value="18:00" checked> 18:00</label>
+            <label><input type="checkbox" class="time-check" value="19:00" checked> 19:00</label>
+            <label><input type="checkbox" class="time-check" value="20:00" checked> 20:00</label>
+            <label><input type="checkbox" class="time-check" value="21:00" checked> 21:00</label>
+            <label><input type="checkbox" class="time-check" value="22:00" checked> 22:00</label>
+            <label><input type="checkbox" class="time-check" value="23:00" checked> 23:00</label>
+            <label><input type="checkbox" class="time-check" value="00:00" checked> 00:00</label>
+            <label><input type="checkbox" class="time-check" value="01:00" checked> 01:00</label>
+            <label><input type="checkbox" class="time-check" value="02:00" checked> 02:00</label>
+            <label><input type="checkbox" class="time-check" value="03:00" checked> 03:00</label>
+            <label><input type="checkbox" class="time-check" value="04:00" checked> 04:00</label>
+            <label><input type="checkbox" class="time-check" value="05:00" checked> 05:00</label>
+            <label><input type="checkbox" class="time-check" value="06:00" checked> 06:00</label>
+          </div>
+        </div>
+
+        <!-- LEVEL AIR -->
+        <div class="form-section">
+          <h3>📊 Level Air</h3>
+          <div class="data-table" id="levelAirTable"></div>
+        </div>
+
+        <!-- FLOW/DEBIT ALIRAN -->
+        <div class="form-section">
+          <h3>💧 Flow/Debit Aliran</h3>
+          <div class="data-table" id="flowDebitTable"></div>
+        </div>
+
+        <!-- PRESSURE DISTRIBUSI -->
+        <div class="form-section">
+          <h3>⚡ Pressure Distribusi</h3>
+          <div class="data-table" id="pressureDistribusiTable"></div>
+        </div>
+
+        <!-- HZ DISTRIBUSI -->
+        <div class="form-section">
+          <h3>🔌 Hz Distribusi</h3>
+          <div class="data-table" id="hzDistribusiTable"></div>
+        </div>
+
+        <!-- PRESSURE INTAKE -->
+        <div class="form-section">
+          <h3>⚡ Pressure Intake</h3>
+          <div class="data-table" id="pressureIntakeTable"></div>
+        </div>
+
+        <!-- HZ INTAKE -->
+        <div class="form-section">
+          <h3>🔌 Hz Intake</h3>
+          <div class="data-table" id="hzIntakeTable"></div>
+        </div>
+
+        <!-- KWH METER -->
+        <div class="form-section">
+          <h3>⚡ Kwh Meter</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>WBP/EA_EXP1 (Kwh)</label>
+              <input type="number" id="kwhWBP1" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>LWBP1/EA_EXP2 (Kwh)</label>
+              <input type="number" id="kwhLWBP1" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>LWBP2/EA_XP3 (Kwh)</label>
+              <input type="number" id="kwhLWBP2" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Total/EA_TOT (Kwh)</label>
+              <input type="number" id="kwhTotal" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+        </div>
+
+        <!-- BACKWASH FILTER -->
+        <div class="form-section">
+          <h3>🔄 Backwash Filter</h3>
+          <div class="data-table" id="backwashFilterTable"></div>
+        </div>
+
+        <!-- INFO WDC -->
+        <div class="form-section">
+          <h3>📈 Info WDC</h3>
+          <div class="data-table" id="wdcTable"></div>
+        </div>
+
+        <!-- TOTAL WM -->
+        <div class="form-section">
+          <h3>📊 Total WM (Water Meter)</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Total WM Air Baku (M3)</label>
+              <input type="number" id="totalWMAirBaku" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Total WM Air Bersih (M3)</label>
+              <input type="number" id="totalWMAirBersih" step="0.01" placeholder="0.00">
+            </div>
+          </div>
+        </div>
+
+        <!-- CATATAN - TETAP DI BAWAH -->
+        <div class="form-section">
+          <h3>📝 Catatan Tambahan</h3>
+          <div class="form-group">
+            <label>Catatan</label>
+            <textarea id="catatan" rows="3" placeholder="Catatan atau keterangan tambahan..."></textarea>
+          </div>
+        </div>
+
+        <!-- DRAFT INDICATOR -->
+        <div id="draftIndicator" style="display:none; background:#fff3cd; padding:12px; border-radius:8px; margin-bottom:16px; border-left:4px solid #ff9800;">
+          💾 Draft tersimpan
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="form-actions">
+          <button class="btn btn-warning" onclick="saveDraft()" id="draftBtn" style="background:#ff9800; color:white;">
+            💾 Save Draft (Lanjutkan Nanti)
+          </button>
+          <button class="btn btn-success" onclick="submitFinalData()" id="submitBtn">
+            📤 Submit Final ke GDrive
+          </button>
+          <button class="btn btn-secondary" onclick="clearForm()">
+            🔄 Reset Form
+          </button>
+          <button class="btn btn-danger" onclick="deleteDraft()" style="background:#f44336; color:white;">
+            🗑️ Hapus Draft
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY SCREEN -->
+    <div id="historyScreen" class="container hidden">
+      <div class="card">
+        <h2 class="section-title">📜 Riwayat Laporan</h2>
+        <button class="btn btn-primary" onclick="loadHistory()" style="margin-bottom:20px;">
+          🔄 Refresh Data
+        </button>
+        <div id="historyList"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav">
+      <button class="nav-item active" onclick="switchScreen('form')">
+        <div class="nav-icon">➕</div>
+        <div class="nav-label">Input Data</div>
+      </button>
+      <button class="nav-item" onclick="switchScreen('history')">
+        <div class="nav-icon">📜</div>
+        <div class="nav-label">Riwayat</div>
+      </button>
+    </div>
+  </div>
+
+  <script src="app-new.js"></script>
+
+</body>
+</html>

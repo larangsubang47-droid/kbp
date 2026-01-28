@@ -1,0 +1,267 @@
+╔═══════════════════════════════════════════════════════════════╗
+║  📋 SISTEM LAPORAN PRODUKSI AIR BERSIH - VERSI 2.0           ║
+║  🎯 DENGAN FITUR SAVE DRAFT & AUTO ORGANIZE                  ║
+╚═══════════════════════════════════════════════════════════════╝
+
+🎉 FITUR BARU:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ SAVE DRAFT (Lanjutkan Nanti)
+   → Data disimpan sementara di browser
+   → Bisa ditutup dan dilanjutkan kapan saja
+   → Otomatis per tanggal
+
+✅ SUBMIT FINAL (Kirim ke GDrive)
+   → Data final yang tidak bisa diubah
+   → Masuk ke Google Drive & Sheets
+   → Email notifikasi otomatis
+
+✅ AUTO SHEET PER HARI
+   → Setiap hari baru = sheet baru otomatis
+   → Format: Laporan_2026_01_28
+
+✅ AUTO SPREADSHEET PER BULAN
+   → Setiap bulan baru = file spreadsheet baru
+   → Format: Laporan Produksi Air Bersih - 2026-01
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 FILE-FILE PENTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Code-new.gs         → Google Apps Script (Backend)
+2. app-new.js          → JavaScript (Frontend Logic)
+3. index-updated.html  → HTML Form (tampilan)
+4. style.css           → Styling (tampilan)
+5. manifest.json       → PWA config
+6. README-V2.md        → Dokumentasi lengkap
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 CARA INSTALL (5 LANGKAH):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LANGKAH 1: Setup Google Drive Folder
+────────────────────────────────────────────────────────────────
+1. Buat folder baru di Google Drive
+2. Copy Folder ID dari URL:
+   https://drive.google.com/drive/folders/1b1wAF-xyz...
+                                         ↑↑↑ Copy ini
+
+LANGKAH 2: Setup Google Apps Script
+────────────────────────────────────────────────────────────────
+1. Buka https://script.google.com
+2. Klik "+ New Project"
+3. Paste seluruh isi file "Code-new.gs"
+4. UPDATE BARIS 7-8:
+   
+   DRIVE_FOLDER_ID: 'PASTE_FOLDER_ID_ANDA_DISINI',
+   NOTIFICATION_EMAILS: 'email1@gmail.com,email2@gmail.com',
+
+5. Klik "Deploy" → "New deployment"
+   - Type: Web app
+   - Execute as: Me
+   - Who has access: Anyone
+   - Klik "Deploy"
+
+6. COPY URL yang muncul (penting!)
+   Contoh: https://script.google.com/macros/s/AKfycby...
+
+LANGKAH 3: Update Frontend
+────────────────────────────────────────────────────────────────
+1. Buka file "app-new.js"
+2. BARIS 3, paste Web App URL:
+   
+   const API_URL = 'PASTE_WEB_APP_URL_ANDA_DISINI';
+
+LANGKAH 4: Rename File
+────────────────────────────────────────────────────────────────
+1. Rename "index-updated.html" → "index.html"
+2. Rename "app-new.js" → "app.js"
+
+LANGKAH 5: Deploy
+────────────────────────────────────────────────────────────────
+Pilih salah satu:
+
+OPSI A: Test Lokal (Python)
+   python server.py
+   Buka: http://localhost:8000
+
+OPSI B: Deploy Online (Gratis)
+   - Upload ke Netlify atau Vercel
+   - File yang di-upload:
+     * index.html
+     * app.js
+     * style.css
+     * manifest.json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 CARA PAKAI SEHARI-HARI:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SKENARIO 1: Input Bertahap (Pakai Draft)
+────────────────────────────────────────────────────────────────
+
+🌅 PAGI (07:00)
+   1. Login (admin / admin123)
+   2. Pilih tanggal: 28 Januari 2026
+   3. Input data jam 07:00, 08:00, 09:00
+   4. Klik "💾 Save Draft"
+   5. ✅ Tutup aplikasi
+
+☀️ SIANG (12:00)
+   1. Buka aplikasi lagi
+   2. Popup: "Draft ditemukan. Load?"
+   3. Klik OK
+   4. Tambah data jam 10:00, 11:00, 12:00
+   5. Klik "💾 Save Draft" lagi
+
+🌆 SORE (17:00)
+   1. Load draft lagi
+   2. Lengkapi semua data
+   3. Klik "📤 Submit Final ke GDrive"
+   4. Konfirmasi: OK
+   5. ✅ Selesai! Data di Google Drive
+
+
+SKENARIO 2: Input Langsung (Tanpa Draft)
+────────────────────────────────────────────────────────────────
+1. Login
+2. Input semua data sekaligus
+3. Langsung "📤 Submit Final"
+4. ✅ Selesai!
+
+
+SKENARIO 3: Hapus Draft
+────────────────────────────────────────────────────────────────
+1. Buka tanggal yang punya draft
+2. Klik "🗑️ Hapus Draft"
+3. Konfirmasi: OK
+4. ✅ Draft terhapus
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 STRUKTUR HASIL DI GOOGLE DRIVE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 Folder Google Drive Anda
+│
+├─ 📊 Laporan Produksi Air Bersih - MASTER
+│  └─ Sheet: Users, Activity Logs
+│
+├─ 📊 Laporan Produksi Air Bersih - 2026-01 (Januari)
+│  ├─ Sheet: Index Laporan
+│  ├─ Sheet: Laporan_2026_01_28 (data tanggal 28)
+│  ├─ Sheet: Laporan_2026_01_29 (data tanggal 29)
+│  └─ Sheet: Activity Logs
+│
+├─ 📊 Laporan Produksi Air Bersih - 2026-02 (Februari)
+│  ├─ Sheet: Index Laporan
+│  ├─ Sheet: Laporan_2026_02_01
+│  └─ ...
+│
+├─ 📁 Laporan JSON - 2026-01
+│  ├─ 📄 RPT-xxx_2026-01-28.json
+│  └─ 📄 RPT-xxx_2026-01-28_SUMMARY.txt
+│
+└─ 📁 Laporan JSON - 2026-02
+   └─ ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ HAL PENTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. DRAFT vs SUBMIT
+   ────────────────────────────────────────────────────────────
+   Draft    → Lokal di browser, bisa diedit
+   Submit   → Cloud di GDrive, FINAL (tidak bisa diedit)
+
+2. SATU DRAFT PER TANGGAL
+   ────────────────────────────────────────────────────────────
+   - Draft 28 Jan tersimpan terpisah dari draft 29 Jan
+   - Ganti tanggal = load/save draft tanggal itu
+
+3. AUTO ORGANIZE
+   ────────────────────────────────────────────────────────────
+   - 1 Feb 2026 → Buat spreadsheet "2026-02" otomatis
+   - Tanggal baru → Buat sheet baru otomatis
+   - Tidak perlu manual!
+
+4. SUBMIT = FINAL
+   ────────────────────────────────────────────────────────────
+   - Setelah submit, data tidak bisa diubah
+   - Pastikan data sudah benar sebelum submit
+   - Jika salah, submit ulang (masuk sheet yang sama)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆘 TROUBLESHOOTING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ Draft tidak tersimpan
+   → Pastikan tanggal sudah diisi
+   → Cek browser console (F12)
+
+❌ Submit gagal
+   → Cek koneksi internet
+   → Cek API URL sudah benar
+   → Cek Google Apps Script sudah deploy
+
+❌ Spreadsheet tidak dibuat
+   → Cek DRIVE_FOLDER_ID benar
+   → Run testSetup() di Apps Script
+   → Lihat Log (Ctrl+Enter)
+
+❌ Draft tidak ke-load
+   → Pastikan tanggal sama
+   → Refresh halaman
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ TEST SEBELUM PAKAI:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Buka Google Apps Script Editor
+2. Pilih function: testSetup
+3. Klik Run (▶)
+4. Lihat Log (Ctrl+Enter)
+5. Harus muncul:
+   ✅ Master Spreadsheet: ...
+   ✅ Monthly Spreadsheet: ...
+   ✅ Drive Folder: ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 KEUNGGULAN SISTEM BARU:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✔️ Input bertahap - tidak perlu selesai sekaligus
+✔️ Draft tersimpan - bisa lanjutkan kapan saja
+✔️ Auto organize - per hari & per bulan
+✔️ Struktur rapi - mudah dicari
+✔️ Email notifikasi - tahu ada laporan baru
+✔️ Backup JSON - data aman
+✔️ Multi-submit - bisa submit berulang di hari yang sama
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 BUTUH BANTUAN?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Baca dokumentasi lengkap di: README-V2.md
+
+Login default:
+   Username: admin
+   Password: admin123
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 SELAMAT MENGGUNAKAN SISTEM BARU!
+
+Sistem ini dirancang agar lebih fleksibel dan terorganisir.
+Input data jadi lebih mudah dengan fitur draft.
+Data tersusun rapi otomatis per hari dan bulan.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
