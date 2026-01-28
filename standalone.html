@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976d2">
+  <title>Laporan Produksi Air Bersih - Testing Mode</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      padding-bottom: 70px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+      color: white;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+
+    .header h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+      margin-bottom: 24px;
+      color: #1976d2;
+      font-size: 24px;
+      font-weight: 600;
+      border-bottom: 3px solid #1976d2;
+      padding-bottom: 10px;
+    }
+
+    .form-section {
+      margin-bottom: 32px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #1976d2;
+    }
+
+    .form-section h3 {
+      margin-bottom: 16px;
+      color: #333;
+      font-size: 18px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #444;
+      font-size: 14px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #1976d2;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      background: #1976d2;
+      color: white;
+    }
+
+    .btn:hover {
+      background: #1565c0;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #757575;
+    }
+
+    .alert {
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #ff9800;
+      background: #fff3cd;
+    }
+
+    .time-slots {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      padding: 16px;
+      background: white;
+      border-radius: 8px;
+    }
+
+    .time-slots label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .time-slots input[type="checkbox"] {
+      width: auto;
+    }
+
+    .time-slots label:has(input:checked) {
+      background: #1976d2;
+      color: white;
+    }
+
+    .input-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow-x: auto;
+      display: block;
+    }
+
+    .input-table thead {
+      background: #1976d2;
+      color: white;
+    }
+
+    .input-table th,
+    .input-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .input-table input {
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: none;
+    }
+
+    .notification.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    .notification.success {
+      border-left: 4px solid #4caf50;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .time-slots {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      }
+      
+      .input-table {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="notification" class="notification"></div>
+
+  <div class="header">
+    <h1>💧 Laporan Produksi Air Bersih - Mode Testing</h1>
+    <div>Jasa Tirta Luhur</div>
+  </div>
+
+  <div class="container">
+    <div class="alert">
+      ⚠️ <strong>Mode Testing:</strong> Ini adalah versi standalone untuk testing tanpa server. Data hanya disimpan di browser (localStorage) dan tidak akan dikirim ke server.
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">📋 Form Laporan Produksi</h2>
+      
+      <div class="form-section">
+        <h3>ℹ️ Informasi Laporan</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Hari *</label>
+            <input type="text" id="hari" required>
+          </div>
+          <div class="form-group">
+            <label>Tanggal *</label>
+            <input type="date" id="tanggal" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>⏰ Frekuensi Pengambilan Data (07:00 - 06:00)</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Pilih jam pengambilan data</p>
+        <div class="time-slots" id="timeSlots"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>📊 Level Air</h3>
+        <div id="levelAirTable"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>💧 Flow/Debit Aliran</h3>
+        <div id="flowDebitTable"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>⚡ Pressure Distribusi</h3>
+        <div id="pressureDistribusiTable"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>🔌 Hz Distribusi</h3>
+        <div id="hzDistribusiTable"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>⚡ Pressure Intake</h3>
+        <div id="pressureIntakeTable"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>🔌 Hz Intake</h3>
+        <div id="hzIntakeTable"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>📈 Info WDC</h3>
+        <div id="wdcTable"></div>
+      </div>
+
+      <div class="form-section">
+        <h3>⚡ Kwh Meter</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>WBP/EA_EXP1 (Kwh)</label>
+            <input type="number" id="kwhWBP1" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Total/EA_TOT (Kwh)</label>
+            <input type="number" id="kwhTotal" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>📊 Total WM (Water Meter)</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Total WM Air Baku (M3)</label>
+            <input type="number" id="totalWMAirBaku" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Total WM Air Bersih (M3)</label>
+            <input type="number" id="totalWMAirBersih" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>📝 Operator & Catatan</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Operator Shift 1</label>
+            <input type="text" id="operatorShift1">
+          </div>
+          <div class="form-group">
+            <label>Operator Shift 2</label>
+            <input type="text" id="operatorShift2">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Catatan</label>
+          <textarea id="catatan" rows="3"></textarea>
+        </div>
+      </div>
+
+      <button class="btn" onclick="saveData()">💾 Simpan Laporan</button>
+      <button class="btn btn-secondary" onclick="viewSavedData()">📜 Lihat Data Tersimpan</button>
+    </div>
+
+    <div class="card hidden" id="savedDataCard">
+      <h2 class="section-title">📜 Data Tersimpan</h2>
+      <div id="savedDataList"></div>
+    </div>
+  </div>
+
+  <script>
+    // Complete 24-hour time slots from 07:00 to 06:00
+    const times = [
+      '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+      '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+      '19:00', '20:00', '21:00', '22:00', '23:00', '00:00',
+      '01:00', '02:00', '03:00', '04:00', '05:00', '06:00'
+    ];
+    
+    const dataStructure = {
+      levelAir: [
+        { name: 'Air Baku Intake', satuan: 'Mdpl' },
+        { name: 'Reservoar', satuan: 'cm' }
+      ],
+      flowDebit: [
+        { name: 'Inlet WTP', satuan: 'Lps' },
+        { name: 'Outlet WTP', satuan: 'Lps' }
+      ],
+      pressureDistribusi: [
+        { name: 'Pompa 1', satuan: 'Bar' },
+        { name: 'Pompa 2', satuan: 'Bar' },
+        { name: 'Pompa 3', satuan: 'Bar' }
+      ],
+      hzDistribusi: [
+        { name: 'Pompa 1', satuan: 'Hz' },
+        { name: 'Pompa 2', satuan: 'Hz' },
+        { name: 'Pompa 3', satuan: 'Hz' }
+      ],
+      pressureIntake: [
+        { name: 'Pompa 1', satuan: 'Bar' },
+        { name: 'Pompa 2', satuan: 'Bar' },
+        { name: 'Pompa 3', satuan: 'Bar' }
+      ],
+      hzIntake: [
+        { name: 'Pompa 1', satuan: 'Hz' },
+        { name: 'Pompa 2', satuan: 'Hz' },
+        { name: 'Pompa 3', satuan: 'Hz' }
+      ],
+      wdc: [
+        { name: 'Level WDC (%)', satuan: 'Persen' },
+        { name: 'LPS OUT WDC', satuan: 'LPS' }
+      ]
+    };
+
+    let selectedTimes = [];
+
+    // Initialize
+    window.onload = function() {
+      const today = new Date();
+      document.getElementById('tanggal').valueAsDate = today;
+      
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      document.getElementById('hari').value = days[today.getDay()];
+      
+      initializeTimeSlots();
+      updateSelectedTimes();
+    };
+
+    function initializeTimeSlots() {
+      const container = document.getElementById('timeSlots');
+      let html = '';
+      
+      times.forEach(time => {
+        html += `
+          <label>
+            <input type="checkbox" class="time-check" value="${time}" checked onchange="updateSelectedTimes()">
+            ${time}
+          </label>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    function updateSelectedTimes() {
+      const checkboxes = document.querySelectorAll('.time-check:checked');
+      selectedTimes = Array.from(checkboxes).map(cb => cb.value);
+      createAllTables();
+    }
+
+    function createAllTables() {
+      createDataTable('levelAirTable', dataStructure.levelAir);
+      createDataTable('flowDebitTable', dataStructure.flowDebit);
+      createDataTable('pressureDistribusiTable', dataStructure.pressureDistribusi);
+      createDataTable('hzDistribusiTable', dataStructure.hzDistribusi);
+      createDataTable('pressureIntakeTable', dataStructure.pressureIntake);
+      createDataTable('hzIntakeTable', dataStructure.hzIntake);
+      createDataTable('wdcTable', dataStructure.wdc);
+    }
+
+    function createDataTable(tableId, items) {
+      const container = document.getElementById(tableId);
+      let html = '<table class="input-table"><thead><tr>';
+      html += '<th>Jenis Kegiatan</th><th>Satuan</th>';
+      
+      selectedTimes.forEach(time => {
+        html += `<th>${time}</th>`;
+      });
+      
+      html += '</tr></thead><tbody>';
+      
+      items.forEach((item, index) => {
+        html += `<tr><td><strong>${item.name}</strong></td><td>${item.satuan}</td>`;
+        
+        selectedTimes.forEach(time => {
+          const inputId = `${tableId}_${index}_${time.replace(':', '')}`;
+          html += `<td><input type="number" id="${inputId}" step="0.01" placeholder="0"></td>`;
+        });
+        
+        html += `</tr>`;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function collectTableData(tableId, items) {
+      const data = {};
+      items.forEach((item, index) => {
+        data[item.name] = {};
+        selectedTimes.forEach(time => {
+          const inputId = `${tableId}_${index}_${time.replace(':', '')}`;
+          const input = document.getElementById(inputId);
+          if (input && input.value) {
+            data[item.name][time] = parseFloat(input.value);
+          }
+        });
+      });
+      return data;
+    }
+
+    function saveData() {
+      const reportData = {
+        id: 'REPORT_' + Date.now(),
+        hari: document.getElementById('hari').value,
+        tanggal: document.getElementById('tanggal').value,
+        levelAir: collectTableData('levelAirTable', dataStructure.levelAir),
+        flowDebit: collectTableData('flowDebitTable', dataStructure.flowDebit),
+        pressureDistribusi: collectTableData('pressureDistribusiTable', dataStructure.pressureDistribusi),
+        hzDistribusi: collectTableData('hzDistribusiTable', dataStructure.hzDistribusi),
+        pressureIntake: collectTableData('pressureIntakeTable', dataStructure.pressureIntake),
+        hzIntake: collectTableData('hzIntakeTable', dataStructure.hzIntake),
+        wdc: collectTableData('wdcTable', dataStructure.wdc),
+        kwhMeter: {
+          wbp1: document.getElementById('kwhWBP1').value,
+          total: document.getElementById('kwhTotal').value
+        },
+        totalWM: {
+          airBaku: document.getElementById('totalWMAirBaku').value,
+          airBersih: document.getElementById('totalWMAirBersih').value
+        },
+        operator: {
+          shift1: document.getElementById('operatorShift1').value,
+          shift2: document.getElementById('operatorShift2').value
+        },
+        catatan: document.getElementById('catatan').value,
+        createdAt: new Date().toISOString()
+      };
+
+      // Save to localStorage
+      let savedReports = JSON.parse(localStorage.getItem('productionReports') || '[]');
+      savedReports.unshift(reportData);
+      localStorage.setItem('productionReports', JSON.stringify(savedReports));
+
+      showNotification('✓ Laporan berhasil disimpan ke browser!', 'success');
+      
+      setTimeout(() => {
+        if (confirm('Data tersimpan! Ingin lihat data tersimpan?')) {
+          viewSavedData();
+        }
+      }, 500);
+    }
+
+    function viewSavedData() {
+      const savedReports = JSON.parse(localStorage.getItem('productionReports') || '[]');
+      const container = document.getElementById('savedDataList');
+      const card = document.getElementById('savedDataCard');
+      
+      if (savedReports.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#999; padding:40px;">Belum ada data tersimpan</p>';
+      } else {
+        let html = '';
+        savedReports.forEach(report => {
+          const date = new Date(report.createdAt).toLocaleString('id-ID');
+          html += `
+            <div style="padding:16px; border:1px solid #e0e0e0; border-radius:8px; margin-bottom:12px;">
+              <div style="font-weight:600; color:#1976d2; margin-bottom:8px;">${report.hari}, ${report.tanggal}</div>
+              <div style="font-size:14px; color:#666;">Disimpan: ${date}</div>
+              <div style="font-size:14px; color:#666;">Operator: ${report.operator.shift1 || '-'}</div>
+              <button onclick="viewDetail('${report.id}')" style="margin-top:8px; padding:6px 12px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Lihat Detail</button>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      }
+      
+      card.classList.remove('hidden');
+      card.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function viewDetail(id) {
+      const savedReports = JSON.parse(localStorage.getItem('productionReports') || '[]');
+      const report = savedReports.find(r => r.id === id);
+      if (report) {
+        alert('Detail Laporan:\n\n' + JSON.stringify(report, null, 2));
+      }
+    }
+
+    function showNotification(message, type) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = `notification ${type} show`;
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+  </script>
+
+</body>
+</html>
