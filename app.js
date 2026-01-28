@@ -1,7 +1,7 @@
 
 // ==========================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbzYyySjcPaw1KDycEZ76mz6jMW6boouokEkipLxxGZzEuDB9JeE_Ue7TvBJqraBi1md/exec';
-
+// ==========================================
 // ==========================================
 // DATA STRUKTUR
 // ==========================================
@@ -89,6 +89,29 @@ window.onload = function() {
     // Load draft untuk tanggal baru
     loadDraft();
   });
+  
+  // ========== TAMBAHAN: EVENT LISTENER UNTUK LOGIN ==========
+  // Tambah event listener untuk Enter key di login form
+  const loginUsername = document.getElementById('loginUsername');
+  const loginPassword = document.getElementById('loginPassword');
+  
+  if(loginUsername) {
+    loginUsername.addEventListener('keypress', function(e) {
+      if(e.key === 'Enter') {
+        e.preventDefault();
+        login();
+      }
+    });
+  }
+  
+  if(loginPassword) {
+    loginPassword.addEventListener('keypress', function(e) {
+      if(e.key === 'Enter') {
+        e.preventDefault();
+        login();
+      }
+    });
+  }
 };
 
 // ==========================================
@@ -102,13 +125,16 @@ function updateDraftKey() {
 
 function updateDraftIndicator() {
   const indicator = document.getElementById('draftIndicator');
-  if(!indicator) return;
+  if(!currentDraftKey) {
+    indicator.style.display = 'none';
+    return;
+  }
   
-  if(currentDraftKey && localStorage.getItem(currentDraftKey)) {
-    const draft = JSON.parse(localStorage.getItem(currentDraftKey));
-    const lastSaved = new Date(draft.lastSaved).toLocaleString('id-ID');
-    indicator.innerHTML = `💾 Draft tersimpan: ${lastSaved}`;
+  const draft = localStorage.getItem(currentDraftKey);
+  if(draft) {
+    const draftData = JSON.parse(draft);
     indicator.style.display = 'block';
+    indicator.innerHTML = `💾 Draft tersimpan: ${draftData.lastSaved || 'Tidak ada info waktu'}`;
   } else {
     indicator.style.display = 'none';
   }
@@ -116,50 +142,25 @@ function updateDraftIndicator() {
 
 function saveDraft() {
   const tanggal = document.getElementById('tanggal').value;
+  
   if(!tanggal) {
-    showNotification('Tanggal harus diisi!', 'error');
+    showNotification('⚠️ Pilih tanggal terlebih dahulu!', 'warning');
     return;
   }
   
-  // Update draft key
-  updateDraftKey();
+  // Update current draft key
+  currentDraftKey = `draft_${tanggal}`;
   
-  // Collect all data
-  const draftData = {
-    hari: document.getElementById('hari').value,
-    tanggal: tanggal,
-    operator: {
-      shift1: document.getElementById('operatorShift1').value,
-      shift2: document.getElementById('operatorShift2').value
-    },
-    levelAir: collectTableData('levelAirTable', dataStructure.levelAir),
-    flowDebit: collectTableData('flowDebitTable', dataStructure.flowDebit),
-    pressureDistribusi: collectTableData('pressureDistribusiTable', dataStructure.pressureDistribusi),
-    hzDistribusi: collectTableData('hzDistribusiTable', dataStructure.hzDistribusi),
-    pressureIntake: collectTableData('pressureIntakeTable', dataStructure.pressureIntake),
-    hzIntake: collectTableData('hzIntakeTable', dataStructure.hzIntake),
-    wdc: collectTableData('wdcTable', dataStructure.wdc),
-    backwashFilter: collectTableData('backwashFilterTable', dataStructure.backwashFilter),
-    kwhMeter: {
-      wbp1: document.getElementById('kwhWBP1').value,
-      lwbp1: document.getElementById('kwhLWBP1').value,
-      lwbp2: document.getElementById('kwhLWBP2').value,
-      total: document.getElementById('kwhTotal').value
-    },
-    totalWM: {
-      airBaku: document.getElementById('totalWMAirBaku').value,
-      airBersih: document.getElementById('totalWMAirBersih').value
-    },
-    catatan: document.getElementById('catatan').value,
-    selectedTimes: selectedTimes,
-    lastSaved: new Date().toISOString()
-  };
+  const draftData = collectFormData();
+  draftData.lastSaved = new Date().toLocaleString('id-ID');
   
-  // Save to localStorage
-  localStorage.setItem(currentDraftKey, JSON.stringify(draftData));
-  
-  showNotification('✓ Draft berhasil disimpan!', 'success');
-  updateDraftIndicator();
+  try {
+    localStorage.setItem(currentDraftKey, JSON.stringify(draftData));
+    showNotification('✓ Draft berhasil disimpan!', 'success');
+    updateDraftIndicator();
+  } catch(e) {
+    showNotification('❌ Gagal menyimpan draft: ' + e.message, 'error');
+  }
 }
 
 function loadDraft() {
@@ -167,35 +168,37 @@ function loadDraft() {
   if(!tanggal) return;
   
   currentDraftKey = `draft_${tanggal}`;
-  const savedDraft = localStorage.getItem(currentDraftKey);
+  const draftStr = localStorage.getItem(currentDraftKey);
   
-  if(!savedDraft) {
+  if(!draftStr) {
     updateDraftIndicator();
     return;
   }
   
-  if(!confirm('Draft ditemukan untuk tanggal ini. Load draft?')) {
-    updateDraftIndicator();
+  if(!confirm(`Draft ditemukan untuk tanggal ${tanggal}.\nLoad draft?`)) {
     return;
   }
   
-  const draft = JSON.parse(savedDraft);
+  const draft = JSON.parse(draftStr);
   
   // Load basic info
   document.getElementById('hari').value = draft.hari || '';
-  document.getElementById('tanggal').value = draft.tanggal || '';
   document.getElementById('operatorShift1').value = draft.operator?.shift1 || '';
   document.getElementById('operatorShift2').value = draft.operator?.shift2 || '';
   
-  // Load KWH
-  document.getElementById('kwhWBP1').value = draft.kwhMeter?.wbp1 || '';
-  document.getElementById('kwhLWBP1').value = draft.kwhMeter?.lwbp1 || '';
-  document.getElementById('kwhLWBP2').value = draft.kwhMeter?.lwbp2 || '';
-  document.getElementById('kwhTotal').value = draft.kwhMeter?.total || '';
+  // Load KWH Meter
+  if(draft.kwhMeter) {
+    document.getElementById('kwhWbp1').value = draft.kwhMeter.wbp1 || '';
+    document.getElementById('kwhLwbp1').value = draft.kwhMeter.lwbp1 || '';
+    document.getElementById('kwhLwbp2').value = draft.kwhMeter.lwbp2 || '';
+    document.getElementById('kwhTotal').value = draft.kwhMeter.total || '';
+  }
   
   // Load Total WM
-  document.getElementById('totalWMAirBaku').value = draft.totalWM?.airBaku || '';
-  document.getElementById('totalWMAirBersih').value = draft.totalWM?.airBersih || '';
+  if(draft.totalWM) {
+    document.getElementById('wmAirBaku').value = draft.totalWM.airBaku || '';
+    document.getElementById('wmAirBersih').value = draft.totalWM.airBersih || '';
+  }
   
   // Load Catatan
   document.getElementById('catatan').value = draft.catatan || '';
@@ -280,49 +283,78 @@ function installPWA() {
   if(deferredPrompt) {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        showNotification('Aplikasi berhasil diinstall!', 'success');
+      if(choiceResult.outcome === 'accepted') {
+        console.log('PWA installed');
       }
       deferredPrompt = null;
-      document.getElementById('installBtn').style.display = 'none';
     });
   }
 }
 
 // ==========================================
-// AUTHENTICATION
+// LOGIN & AUTH - DIPERBAIKI
 // ==========================================
 async function login() {
-  const username = document.getElementById('loginUsername').value;
-  const password = document.getElementById('loginPassword').value;
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  
+  console.log('🔐 Attempting login...', { username, passwordLength: password.length });
 
   if(!username || !password) {
-    showNotification('Username dan password harus diisi!', 'error');
+    showNotification('⚠️ Username dan password harus diisi!', 'warning');
     return;
+  }
+  
+  // Disable button saat loading
+  const loginBtn = event?.target || document.querySelector('.login-card .btn-primary');
+  const originalText = loginBtn?.textContent;
+  if(loginBtn) {
+    loginBtn.disabled = true;
+    loginBtn.textContent = '⏳ Loading...';
   }
 
   try {
+    console.log('📡 Sending request to:', API_URL);
+    
     const response = await fetch(API_URL, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain',
+      },
       body: JSON.stringify({
         action: 'login',
         username: username,
         password: password
-      })
+      }),
+      mode: 'cors'
     });
 
+    console.log('📥 Response status:', response.status);
+    
+    if(!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const result = await response.json();
+    console.log('📦 Response data:', result);
 
     if(result.success) {
       currentUser = result.data;
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      showNotification('Login berhasil!', 'success');
+      showNotification('✓ Login berhasil!', 'success');
       showMainApp();
     } else {
-      showNotification(result.message, 'error');
+      showNotification('❌ ' + (result.message || 'Login gagal'), 'error');
     }
   } catch(error) {
-    showNotification('Gagal connect ke server: ' + error.message, 'error');
+    console.error('❌ Login error:', error);
+    showNotification('❌ Gagal connect ke server: ' + error.message + '\n\nCek console (F12) untuk detail error', 'error');
+  } finally {
+    // Re-enable button
+    if(loginBtn) {
+      loginBtn.disabled = false;
+      loginBtn.textContent = originalText;
+    }
   }
 }
 
@@ -332,92 +364,112 @@ function logout() {
     currentUser = null;
     document.getElementById('mainApp').classList.add('hidden');
     document.getElementById('loginScreen').classList.remove('hidden');
-    showNotification('Logout berhasil!', 'success');
+    showNotification('✓ Logout berhasil!', 'success');
   }
 }
 
 function showMainApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  document.getElementById('userDisplay').textContent = `👤 ${currentUser.nama}`;
+  document.getElementById('userDisplay').textContent = `👤 ${currentUser.nama} (${currentUser.role})`;
   
-  // Initialize tables
-  initializeTables();
-  loadHistory();
-  updateDraftIndicator();
+  // Initialize draft key
+  updateDraftKey();
 }
 
 // ==========================================
-// TABLE INITIALIZATION
+// TIME SELECTION
 // ==========================================
 function updateSelectedTimes() {
-  const checkboxes = document.querySelectorAll('.time-check:checked');
-  selectedTimes = Array.from(checkboxes).map(cb => cb.value);
+  selectedTimes = [];
+  document.querySelectorAll('.time-check:checked').forEach(cb => {
+    selectedTimes.push(cb.value);
+  });
   initializeTables();
 }
 
 function initializeTables() {
-  // Add event listeners to time checkboxes
-  document.querySelectorAll('.time-check').forEach(checkbox => {
-    checkbox.addEventListener('change', updateSelectedTimes);
-  });
-  
-  // Initialize each table
-  createDataTable('levelAirTable', dataStructure.levelAir);
-  createDataTable('flowDebitTable', dataStructure.flowDebit);
-  createDataTable('pressureDistribusiTable', dataStructure.pressureDistribusi);
-  createDataTable('hzDistribusiTable', dataStructure.hzDistribusi);
-  createDataTable('pressureIntakeTable', dataStructure.pressureIntake);
-  createDataTable('hzIntakeTable', dataStructure.hzIntake);
-  createDataTable('wdcTable', dataStructure.wdc);
-  createDataTable('backwashFilterTable', dataStructure.backwashFilter);
+  createTable('levelAirTable', dataStructure.levelAir);
+  createTable('flowDebitTable', dataStructure.flowDebit);
+  createTable('pressureDistribusiTable', dataStructure.pressureDistribusi);
+  createTable('hzDistribusiTable', dataStructure.hzDistribusi);
+  createTable('pressureIntakeTable', dataStructure.pressureIntake);
+  createTable('hzIntakeTable', dataStructure.hzIntake);
+  createTable('wdcTable', dataStructure.wdc);
+  createTable('backwashFilterTable', dataStructure.backwashFilter);
 }
 
-function createDataTable(tableId, items) {
-  const container = document.getElementById(tableId);
-  if (!container) return;
+function createTable(tableId, items) {
+  const table = document.getElementById(tableId);
+  table.innerHTML = '';
   
-  let html = '<table class="input-table"><thead><tr>';
-  html += '<th>Jenis Kegiatan</th><th>Satuan</th>';
-  
+  // Header row
+  const headerRow = document.createElement('tr');
+  headerRow.innerHTML = '<th>Jenis Kegiatan</th><th>Satuan</th>';
   selectedTimes.forEach(time => {
-    html += `<th>${time}</th>`;
+    headerRow.innerHTML += `<th>${time}</th>`;
   });
+  table.appendChild(headerRow);
   
-  html += '</tr></thead><tbody>';
-  
+  // Data rows
   items.forEach((item, index) => {
-    html += `<tr>`;
-    html += `<td><strong>${item.name}</strong></td>`;
-    html += `<td>${item.satuan}</td>`;
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${item.name}</td><td>${item.satuan}</td>`;
     
     selectedTimes.forEach(time => {
       const inputId = `${tableId}_${index}_${time.replace(':', '')}`;
-      html += `<td><input type="number" id="${inputId}" step="0.01" placeholder="0"></td>`;
+      row.innerHTML += `<td><input type="number" step="0.01" id="${inputId}" class="table-input"></td>`;
     });
     
-    html += `</tr>`;
+    table.appendChild(row);
   });
-  
-  html += '</tbody></table>';
-  container.innerHTML = html;
 }
 
 // ==========================================
-// COLLECT DATA FROM TABLES
+// DATA COLLECTION
 // ==========================================
+function collectFormData() {
+  const data = {
+    tanggal: document.getElementById('tanggal').value,
+    hari: document.getElementById('hari').value,
+    operator: {
+      shift1: document.getElementById('operatorShift1').value,
+      shift2: document.getElementById('operatorShift2').value
+    },
+    selectedTimes: selectedTimes,
+    levelAir: collectTableData('levelAirTable', dataStructure.levelAir),
+    flowDebit: collectTableData('flowDebitTable', dataStructure.flowDebit),
+    pressureDistribusi: collectTableData('pressureDistribusiTable', dataStructure.pressureDistribusi),
+    hzDistribusi: collectTableData('hzDistribusiTable', dataStructure.hzDistribusi),
+    pressureIntake: collectTableData('pressureIntakeTable', dataStructure.pressureIntake),
+    hzIntake: collectTableData('hzIntakeTable', dataStructure.hzIntake),
+    wdc: collectTableData('wdcTable', dataStructure.wdc),
+    backwashFilter: collectTableData('backwashFilterTable', dataStructure.backwashFilter),
+    kwhMeter: {
+      wbp1: document.getElementById('kwhWbp1').value,
+      lwbp1: document.getElementById('kwhLwbp1').value,
+      lwbp2: document.getElementById('kwhLwbp2').value,
+      total: document.getElementById('kwhTotal').value
+    },
+    totalWM: {
+      airBaku: document.getElementById('wmAirBaku').value,
+      airBersih: document.getElementById('wmAirBersih').value
+    },
+    catatan: document.getElementById('catatan').value
+  };
+  
+  return data;
+}
+
 function collectTableData(tableId, items) {
   const data = {};
   
   items.forEach((item, index) => {
     data[item.name] = {};
-    
     selectedTimes.forEach(time => {
       const inputId = `${tableId}_${index}_${time.replace(':', '')}`;
       const input = document.getElementById(inputId);
-      if (input && input.value) {
-        data[item.name][time] = parseFloat(input.value);
-      }
+      data[item.name][time] = input ? input.value : '';
     });
   });
   
@@ -425,206 +477,128 @@ function collectTableData(tableId, items) {
 }
 
 // ==========================================
-// SUBMIT FINAL DATA (KE GDRIVE)
+// SUBMIT FINAL DATA
 // ==========================================
 async function submitFinalData() {
-  const hari = document.getElementById('hari').value;
-  const tanggal = document.getElementById('tanggal').value;
-
-  if(!hari || !tanggal) {
-    showNotification('Hari dan tanggal harus diisi!', 'error');
+  if(!currentUser) {
+    showNotification('❌ Anda harus login terlebih dahulu!', 'error');
     return;
   }
   
-  if(!confirm('Submit laporan final ke Google Drive?\n\nSetelah submit, data tidak bisa diubah lagi.')) {
+  const data = collectFormData();
+  
+  // Validasi
+  if(!data.tanggal || !data.hari) {
+    showNotification('⚠️ Tanggal dan hari harus diisi!', 'warning');
     return;
   }
-
-  const submitBtn = document.getElementById('submitBtn');
-  submitBtn.disabled = true;
-  submitBtn.textContent = '⏳ Mengirim ke GDrive...';
-
+  
+  if(!confirm('⚠️ PERHATIAN!\n\nData yang sudah disubmit tidak bisa diubah lagi.\nYakin ingin submit data final ke Google Drive?')) {
+    return;
+  }
+  
+  const submitBtn = event?.target;
+  const originalText = submitBtn?.textContent;
+  if(submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Mengirim...';
+  }
+  
   try {
-    // Collect all data
-    const reportData = {
-      hari: hari,
-      tanggal: tanggal,
-      operator: {
-        shift1: document.getElementById('operatorShift1').value,
-        shift2: document.getElementById('operatorShift2').value
-      },
-      levelAir: collectTableData('levelAirTable', dataStructure.levelAir),
-      flowDebit: collectTableData('flowDebitTable', dataStructure.flowDebit),
-      pressureDistribusi: collectTableData('pressureDistribusiTable', dataStructure.pressureDistribusi),
-      hzDistribusi: collectTableData('hzDistribusiTable', dataStructure.hzDistribusi),
-      pressureIntake: collectTableData('pressureIntakeTable', dataStructure.pressureIntake),
-      hzIntake: collectTableData('hzIntakeTable', dataStructure.hzIntake),
-      wdc: collectTableData('wdcTable', dataStructure.wdc),
-      backwashFilter: collectTableData('backwashFilterTable', dataStructure.backwashFilter),
-      kwhMeter: {
-        wbp1: document.getElementById('kwhWBP1').value,
-        lwbp1: document.getElementById('kwhLWBP1').value,
-        lwbp2: document.getElementById('kwhLWBP2').value,
-        total: document.getElementById('kwhTotal').value
-      },
-      totalWM: {
-        airBaku: document.getElementById('totalWMAirBaku').value,
-        airBersih: document.getElementById('totalWMAirBersih').value
-      },
-      catatan: document.getElementById('catatan').value,
-      selectedTimes: selectedTimes
-    };
-
     const response = await fetch(API_URL, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain',
+      },
       body: JSON.stringify({
         action: 'saveProductionReport',
         userId: currentUser.userId,
-        reportData: reportData
-      })
+        reportData: data
+      }),
+      mode: 'cors'
     });
-
+    
     const result = await response.json();
-
+    
     if(result.success) {
-      showNotification('✓ Laporan berhasil dikirim ke Google Drive!', 'success');
+      showNotification('✓ Laporan berhasil disimpan!\n\nID: ' + result.data.recordId, 'success');
       
       // Hapus draft setelah submit
       if(currentDraftKey) {
         localStorage.removeItem(currentDraftKey);
+        updateDraftIndicator();
       }
       
-      clearForm();
-      loadHistory();
-      updateDraftIndicator();
+      // Reset form
+      if(confirm('Data berhasil disimpan!\n\nReset form untuk input baru?')) {
+        resetForm();
+      }
     } else {
-      showNotification('Gagal submit: ' + result.message, 'error');
+      showNotification('❌ Gagal menyimpan: ' + result.message, 'error');
     }
   } catch(error) {
-    showNotification('Error: ' + error.message, 'error');
+    console.error('Submit error:', error);
+    showNotification('❌ Error saat menyimpan: ' + error.message, 'error');
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = '📤 Submit Final ke GDrive';
+    if(submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
   }
 }
 
-function clearForm() {
-  const today = new Date();
-  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+// ==========================================
+// RESET & UTILITY
+// ==========================================
+function resetForm() {
+  if(!confirm('Reset form? Semua data yang belum disimpan akan hilang!')) return;
   
-  document.getElementById('hari').value = days[today.getDay()];
-  document.getElementById('tanggal').valueAsDate = today;
+  // Reset basic info
   document.getElementById('operatorShift1').value = '';
   document.getElementById('operatorShift2').value = '';
-  document.getElementById('kwhWBP1').value = '';
-  document.getElementById('kwhLWBP1').value = '';
-  document.getElementById('kwhLWBP2').value = '';
+  
+  // Reset KWH & WM
+  document.getElementById('kwhWbp1').value = '';
+  document.getElementById('kwhLwbp1').value = '';
+  document.getElementById('kwhLwbp2').value = '';
   document.getElementById('kwhTotal').value = '';
-  document.getElementById('totalWMAirBaku').value = '';
-  document.getElementById('totalWMAirBersih').value = '';
+  document.getElementById('wmAirBaku').value = '';
+  document.getElementById('wmAirBersih').value = '';
   document.getElementById('catatan').value = '';
   
-  // Clear all table inputs
-  document.querySelectorAll('.input-table input').forEach(input => {
+  // Reset all table inputs
+  document.querySelectorAll('.table-input').forEach(input => {
     input.value = '';
   });
   
-  updateDraftKey();
-  updateDraftIndicator();
+  showNotification('✓ Form berhasil direset!', 'success');
 }
 
-// ==========================================
-// LOAD HISTORY
-// ==========================================
-async function loadHistory() {
-  const historyList = document.getElementById('historyList');
-  historyList.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat data...</div>';
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'getProductionHistory',
-        userId: currentUser.userId,
-        role: currentUser.role,
-        limit: 50
-      })
-    });
-
-    const result = await response.json();
-
-    if(result.success) {
-      const records = result.data.records;
-      
-      if(records.length === 0) {
-        historyList.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">Belum ada laporan</div>';
-        return;
-      }
-
-      let html = '';
-      records.forEach(record => {
-        const date = new Date(record.createdAt).toLocaleString('id-ID');
-        
-        html += `
-          <div class="history-item" onclick="viewDetail('${record.recordId}')">
-            <div class="history-header">
-              <span class="history-date">${date}</span>
-              <span class="status-badge status-aktif">📄 Laporan</span>
-            </div>
-            <div class="history-name">${record.hari}, ${record.tanggal}</div>
-            <div class="history-id">Operator: ${record.operator.shift1}</div>
-          </div>
-        `;
-      });
-
-      historyList.innerHTML = html;
-    } else {
-      historyList.innerHTML = '<div style="text-align:center; padding:40px; color:#f44336;">Gagal memuat data</div>';
-    }
-  } catch(error) {
-    historyList.innerHTML = '<div style="text-align:center; padding:40px; color:#f44336;">Error: ' + error.message + '</div>';
-  }
-}
-
-function viewDetail(recordId) {
-  showNotification('Detail untuk ' + recordId, 'success');
-  // Implement detail view later
-}
-
-// ==========================================
-// NAVIGATION
-// ==========================================
-function switchScreen(screen) {
-  const navItems = document.querySelectorAll('.nav-item');
-  navItems.forEach(item => item.classList.remove('active'));
-
-  if(screen === 'form') {
-    document.getElementById('formScreen').classList.remove('hidden');
-    document.getElementById('historyScreen').classList.add('hidden');
-    navItems[0].classList.add('active');
-  } else if(screen === 'history') {
-    document.getElementById('formScreen').classList.add('hidden');
-    document.getElementById('historyScreen').classList.remove('hidden');
-    navItems[1].classList.add('active');
-    loadHistory();
-  }
-}
-
-// ==========================================
-// NOTIFICATION
-// ==========================================
-function showNotification(message, type = 'success') {
+function showNotification(message, type = 'info') {
   const notification = document.getElementById('notification');
   notification.textContent = message;
   notification.className = `notification ${type} show`;
   
   setTimeout(() => {
     notification.classList.remove('show');
-  }, 3000);
+  }, 5000);
 }
 
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-  Notification.requestPermission();
+// ==========================================
+// AUTO-SAVE DRAFT (OPTIONAL)
+// ==========================================
+let autoSaveTimer;
+function startAutoSave() {
+  // Auto save setiap 2 menit
+  clearInterval(autoSaveTimer);
+  autoSaveTimer = setInterval(() => {
+    const tanggal = document.getElementById('tanggal').value;
+    if(tanggal && currentUser) {
+      saveDraft();
+      console.log('✅ Auto-save draft');
+    }
+  }, 120000); // 2 menit
 }
 
+// Uncomment line berikut jika ingin aktifkan auto-save
+// startAutoSave();
