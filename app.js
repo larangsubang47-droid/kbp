@@ -1,5 +1,5 @@
 // ==========================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbx5os7RPqs_UBEqjroDWpZrznSob1r8jWq_s7bzjGfKRwu7bC_XrWt-WUpyUe8ff0XC/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz636a7gqjaTkarFx4hROPT-ksgIm7VXLZbFrLmch0M0NMq4_Olls9DzhalARq_u_8/exec';
 
 // ==========================================
 // DATA STRUKTUR
