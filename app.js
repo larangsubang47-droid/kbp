@@ -77,6 +77,9 @@ window.onload = function() {
   
   // Start auto-save (every 30 seconds)
   startAutoSave();
+  
+  // Add focus scroll behavior for better UX on desktop
+  addFocusScrollBehavior();
 };
 
 // ==========================================
@@ -580,3 +583,93 @@ function showNotification(message, type = 'success') {
 if ('Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();
 }
+
+// ==========================================
+// FOCUS SCROLL BEHAVIOR (untuk Desktop UX)
+// ==========================================
+function addFocusScrollBehavior() {
+  // Add event listener untuk semua input dan textarea
+  document.addEventListener('focusin', function(e) {
+    const target = e.target;
+    
+    // Hanya untuk input dan textarea
+    if(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      // Auto scroll ke element yang focus dengan smooth behavior
+      setTimeout(() => {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }, 100);
+      
+      // Tambahkan visual indicator di section header
+      highlightCurrentSection(target);
+    }
+  });
+}
+
+function highlightCurrentSection(inputElement) {
+  // Cari section parent terdekat
+  const section = inputElement.closest('.form-section');
+  if(section) {
+    const sectionTitle = section.querySelector('h3');
+    if(sectionTitle) {
+      // Hapus highlight sebelumnya
+      document.querySelectorAll('.form-section h3').forEach(title => {
+        title.style.backgroundColor = '';
+        title.style.padding = '';
+        title.style.borderRadius = '';
+        title.style.marginLeft = '';
+      });
+      
+      // Tambahkan highlight ke section yang sedang diisi
+      sectionTitle.style.backgroundColor = '#1976d2';
+      sectionTitle.style.color = 'white';
+      sectionTitle.style.padding = '8px 12px';
+      sectionTitle.style.borderRadius = '6px';
+      sectionTitle.style.marginLeft = '-12px';
+      sectionTitle.style.transition = 'all 0.3s ease';
+    }
+  }
+  
+  // Untuk input dalam tabel, highlight table header
+  const tableCell = inputElement.closest('td');
+  if(tableCell) {
+    const table = inputElement.closest('table');
+    if(table) {
+      // Hapus highlight sebelumnya
+      table.querySelectorAll('th').forEach(th => {
+        th.style.backgroundColor = '#1976d2';
+      });
+      
+      // Highlight kolom yang sedang diisi
+      const cellIndex = Array.from(tableCell.parentElement.children).indexOf(tableCell);
+      const headerCell = table.querySelector(`thead tr th:nth-child(${cellIndex + 1})`);
+      if(headerCell) {
+        headerCell.style.backgroundColor = '#ff9800';
+        headerCell.style.transition = 'all 0.3s ease';
+      }
+    }
+  }
+}
+
+// Hapus highlight saat blur
+document.addEventListener('focusout', function(e) {
+  setTimeout(() => {
+    // Reset semua highlight jika tidak ada input yang focus
+    if(!document.activeElement || (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA')) {
+      document.querySelectorAll('.form-section h3').forEach(title => {
+        title.style.backgroundColor = '';
+        title.style.color = '';
+        title.style.padding = '';
+        title.style.borderRadius = '';
+        title.style.marginLeft = '';
+      });
+      
+      document.querySelectorAll('.input-table thead th').forEach(th => {
+        th.style.backgroundColor = '#1976d2';
+      });
+    }
+  }, 100);
+});
