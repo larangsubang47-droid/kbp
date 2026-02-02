@@ -596,11 +596,37 @@ function addFocusScrollBehavior() {
     if(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
       // Auto scroll ke element yang focus dengan smooth behavior
       setTimeout(() => {
+        // Scroll vertical (ke tengah layar)
         target.scrollIntoView({
           behavior: 'smooth',
           block: 'center',
           inline: 'nearest'
         });
+        
+        // Jika input di dalam tabel, scroll horizontal juga
+        const tableCell = target.closest('td');
+        if(tableCell) {
+          const dataTableWrapper = target.closest('.data-table');
+          if(dataTableWrapper) {
+            // Hitung posisi input dalam tabel
+            const cellRect = tableCell.getBoundingClientRect();
+            const wrapperRect = dataTableWrapper.getBoundingClientRect();
+            
+            // Scroll horizontal jika input di luar viewport
+            const scrollLeft = dataTableWrapper.scrollLeft;
+            const cellLeft = tableCell.offsetLeft;
+            const cellWidth = tableCell.offsetWidth;
+            const wrapperWidth = wrapperRect.width;
+            
+            // Posisi ideal: input di tengah viewport tabel
+            const idealScrollLeft = cellLeft - (wrapperWidth / 2) + (cellWidth / 2);
+            
+            dataTableWrapper.scrollTo({
+              left: idealScrollLeft,
+              behavior: 'smooth'
+            });
+          }
+        }
       }, 100);
       
       // Tambahkan visual indicator di section header
@@ -618,6 +644,7 @@ function highlightCurrentSection(inputElement) {
       // Hapus highlight sebelumnya
       document.querySelectorAll('.form-section h3').forEach(title => {
         title.style.backgroundColor = '';
+        title.style.color = '';
         title.style.padding = '';
         title.style.borderRadius = '';
         title.style.marginLeft = '';
@@ -641,6 +668,8 @@ function highlightCurrentSection(inputElement) {
       // Hapus highlight sebelumnya
       table.querySelectorAll('th').forEach(th => {
         th.style.backgroundColor = '#1976d2';
+        th.style.transform = '';
+        th.style.fontSize = '';
       });
       
       // Highlight kolom yang sedang diisi
@@ -648,7 +677,15 @@ function highlightCurrentSection(inputElement) {
       const headerCell = table.querySelector(`thead tr th:nth-child(${cellIndex + 1})`);
       if(headerCell) {
         headerCell.style.backgroundColor = '#ff9800';
+        headerCell.style.transform = 'scale(1.1)';
+        headerCell.style.fontSize = '14px';
         headerCell.style.transition = 'all 0.3s ease';
+        headerCell.style.zIndex = '20';
+        headerCell.style.position = 'relative';
+        
+        // Tambahkan border untuk lebih jelas
+        headerCell.style.border = '2px solid #ff6f00';
+        headerCell.style.boxShadow = '0 4px 8px rgba(255, 152, 0, 0.4)';
       }
     }
   }
@@ -669,6 +706,10 @@ document.addEventListener('focusout', function(e) {
       
       document.querySelectorAll('.input-table thead th').forEach(th => {
         th.style.backgroundColor = '#1976d2';
+        th.style.transform = '';
+        th.style.fontSize = '';
+        th.style.border = '';
+        th.style.boxShadow = '';
       });
     }
   }, 100);
