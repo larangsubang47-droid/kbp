@@ -594,16 +594,13 @@ function addFocusScrollBehavior() {
     
     // Hanya untuk input dan textarea
     if(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-      // Auto scroll ke element yang focus dengan smooth behavior
+      
+      // Tambahkan backdrop untuk membuat input lebih menonjol
+      addBackdrop();
+      
+      // Delay untuk memastikan DOM sudah update
       setTimeout(() => {
-        // Scroll vertical (ke tengah layar)
-        target.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-          inline: 'nearest'
-        });
-        
-        // Jika input di dalam tabel, scroll horizontal juga
+        // Jika input di dalam tabel, scroll horizontal DULU
         const tableCell = target.closest('td');
         if(tableCell) {
           const dataTableWrapper = target.closest('.data-table');
@@ -611,21 +608,38 @@ function addFocusScrollBehavior() {
             // Hitung posisi input dalam tabel
             const cellRect = tableCell.getBoundingClientRect();
             const wrapperRect = dataTableWrapper.getBoundingClientRect();
-            
-            // Scroll horizontal jika input di luar viewport
             const scrollLeft = dataTableWrapper.scrollLeft;
             const cellLeft = tableCell.offsetLeft;
             const cellWidth = tableCell.offsetWidth;
             const wrapperWidth = wrapperRect.width;
             
-            // Posisi ideal: input di tengah viewport tabel
-            const idealScrollLeft = cellLeft - (wrapperWidth / 2) + (cellWidth / 2);
+            // AGGRESSIVE SCROLL: pastikan input di tengah dengan buffer besar
+            const buffer = 200; // Buffer 200px dari kiri dan kanan
+            const idealScrollLeft = cellLeft - buffer;
             
+            // Scroll horizontal dengan smooth behavior
             dataTableWrapper.scrollTo({
               left: idealScrollLeft,
               behavior: 'smooth'
             });
+            
+            // Tunggu scroll horizontal selesai, baru scroll vertical
+            setTimeout(() => {
+              // Scroll vertical ke tengah layar
+              target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+              });
+            }, 300);
           }
+        } else {
+          // Untuk input biasa (bukan di tabel), langsung scroll
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          });
         }
       }, 100);
       
@@ -633,6 +647,66 @@ function addFocusScrollBehavior() {
       highlightCurrentSection(target);
     }
   });
+  
+  // TAMBAHAN: Scroll on click untuk memastikan
+  document.addEventListener('click', function(e) {
+    if(e.target.tagName === 'INPUT' && e.target.type !== 'checkbox') {
+      const tableCell = e.target.closest('td');
+      if(tableCell) {
+        const dataTableWrapper = e.target.closest('.data-table');
+        if(dataTableWrapper) {
+          setTimeout(() => {
+            const cellLeft = tableCell.offsetLeft;
+            const buffer = 200;
+            const idealScrollLeft = cellLeft - buffer;
+            
+            dataTableWrapper.scrollTo({
+              left: idealScrollLeft,
+              behavior: 'smooth'
+            });
+          }, 50);
+        }
+      }
+    }
+  });
+}
+
+// Fungsi untuk menambahkan backdrop
+function addBackdrop() {
+  // Hapus backdrop lama jika ada
+  const existingBackdrop = document.querySelector('.input-focus-backdrop');
+  if(existingBackdrop) {
+    existingBackdrop.remove();
+  }
+  
+  // Buat backdrop baru
+  const backdrop = document.createElement('div');
+  backdrop.className = 'input-focus-backdrop';
+  document.body.appendChild(backdrop);
+}
+
+// Fungsi untuk menghapus backdrop
+function removeBackdrop() {
+  const backdrop = document.querySelector('.input-focus-backdrop');
+  if(backdrop) {
+    backdrop.style.animation = 'fadeOutBackdrop 0.3s ease';
+    setTimeout(() => {
+      backdrop.remove();
+    }, 300);
+  }
+  
+  // Tambahkan animation fadeOut jika belum ada
+  if(!document.querySelector('#backdropFadeOut')) {
+    const style = document.createElement('style');
+    style.id = 'backdropFadeOut';
+    style.textContent = `
+      @keyframes fadeOutBackdrop {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 }
 
 function highlightCurrentSection(inputElement) {
@@ -650,13 +724,15 @@ function highlightCurrentSection(inputElement) {
         title.style.marginLeft = '';
       });
       
-      // Tambahkan highlight ke section yang sedang diisi
-      sectionTitle.style.backgroundColor = '#1976d2';
+      // Tambahkan highlight ke section yang sedang diisi - WARNA ORANGE
+      sectionTitle.style.backgroundColor = '#ff9800';
       sectionTitle.style.color = 'white';
-      sectionTitle.style.padding = '8px 12px';
-      sectionTitle.style.borderRadius = '6px';
+      sectionTitle.style.padding = '12px 16px';
+      sectionTitle.style.borderRadius = '8px';
       sectionTitle.style.marginLeft = '-12px';
       sectionTitle.style.transition = 'all 0.3s ease';
+      sectionTitle.style.boxShadow = '0 4px 8px rgba(255, 152, 0, 0.4)';
+      sectionTitle.style.transform = 'scale(1.05)';
     }
   }
   
@@ -672,22 +748,73 @@ function highlightCurrentSection(inputElement) {
         th.style.fontSize = '';
       });
       
-      // Highlight kolom yang sedang diisi
+      // Highlight kolom yang sedang diisi - SUPER JELAS
       const cellIndex = Array.from(tableCell.parentElement.children).indexOf(tableCell);
       const headerCell = table.querySelector(`thead tr th:nth-child(${cellIndex + 1})`);
       if(headerCell) {
-        headerCell.style.backgroundColor = '#ff9800';
-        headerCell.style.transform = 'scale(1.1)';
-        headerCell.style.fontSize = '14px';
+        headerCell.style.backgroundColor = '#ff5722';  // RED-ORANGE
+        headerCell.style.transform = 'scale(1.2)';
+        headerCell.style.fontSize = '16px';
+        headerCell.style.fontWeight = 'bold';
         headerCell.style.transition = 'all 0.3s ease';
-        headerCell.style.zIndex = '20';
+        headerCell.style.zIndex = '999';
         headerCell.style.position = 'relative';
+        headerCell.style.border = '3px solid #d84315';
+        headerCell.style.boxShadow = '0 6px 12px rgba(255, 87, 34, 0.6)';
+        headerCell.style.textShadow = '0 2px 4px rgba(0,0,0,0.3)';
         
-        // Tambahkan border untuk lebih jelas
-        headerCell.style.border = '2px solid #ff6f00';
-        headerCell.style.boxShadow = '0 4px 8px rgba(255, 152, 0, 0.4)';
+        // Tambahkan floating label di atas tabel
+        showFloatingLabel(headerCell.textContent, tableCell);
       }
     }
+  }
+}
+
+// Fungsi untuk menampilkan floating label
+function showFloatingLabel(columnName, cell) {
+  // Hapus floating label sebelumnya
+  const existingLabel = document.querySelector('.floating-input-label');
+  if(existingLabel) {
+    existingLabel.remove();
+  }
+  
+  // Buat floating label baru
+  const label = document.createElement('div');
+  label.className = 'floating-input-label';
+  label.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: linear-gradient(135deg, #ff5722 0%, #ff9800 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 8px 16px rgba(255, 87, 34, 0.4);
+      z-index: 9999;
+      animation: pulseFloat 1s ease-in-out infinite;
+      border: 3px solid white;
+    ">
+      📍 Sedang Mengisi: <br>
+      <span style="font-size: 22px; display: block; margin-top: 8px;">${columnName}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(label);
+  
+  // Tambahkan CSS animation jika belum ada
+  if(!document.querySelector('#floatingLabelStyle')) {
+    const style = document.createElement('style');
+    style.id = 'floatingLabelStyle';
+    style.textContent = `
+      @keyframes pulseFloat {
+        0%, 100% { transform: scale(1) translateY(0); }
+        50% { transform: scale(1.05) translateY(-5px); }
+      }
+    `;
+    document.head.appendChild(style);
   }
 }
 
@@ -702,6 +829,8 @@ document.addEventListener('focusout', function(e) {
         title.style.padding = '';
         title.style.borderRadius = '';
         title.style.marginLeft = '';
+        title.style.boxShadow = '';
+        title.style.transform = '';
       });
       
       document.querySelectorAll('.input-table thead th').forEach(th => {
@@ -710,7 +839,18 @@ document.addEventListener('focusout', function(e) {
         th.style.fontSize = '';
         th.style.border = '';
         th.style.boxShadow = '';
+        th.style.textShadow = '';
+        th.style.fontWeight = '';
       });
+      
+      // Hapus floating label
+      const floatingLabel = document.querySelector('.floating-input-label');
+      if(floatingLabel) {
+        floatingLabel.remove();
+      }
+      
+      // Hapus backdrop
+      removeBackdrop();
     }
   }, 100);
 });
