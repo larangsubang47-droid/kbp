@@ -79,7 +79,7 @@ window.onload = function() {
   startAutoSave();
   
   // Add focus scroll behavior for better UX on desktop
-  addFocusScrollBehavior();
+  // addFocusScrollBehavior(); // DISABLED - mengganggu di mobile
 };
 
 // ==========================================
